@@ -1,6 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from bson import SON
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from rlttest.core.dto.salary import AggregatedSalaries
@@ -17,7 +16,6 @@ class SalaryGateway:
         dt_upto: datetime,
         group_type: GroupType,
     ) -> AggregatedSalaries:
-        print(dt_from, dt_upto, group_type)
         date_format = {
             "hour": "%Y-%m-%dT%H",
             "day": "%Y-%m-%d",
@@ -32,14 +30,33 @@ class SalaryGateway:
                     "total": {"$sum": "$value"},
                 }
             },
-            {"$sort": SON([("_id", 1)])},
         ]
         cursor = self._database.salaries.aggregate(pipeline)
 
-        labels = []
-        dataset = []
+        labels: list[datetime] = []
+        dataset: list[int] = []
+
         async for document in cursor:
-            labels.append(datetime.strptime(document["_id"], date_format).isoformat())
+            date_current = datetime.strptime(document["_id"], date_format)
+
+            labels.append(date_current)
             dataset.append(document["total"])
 
-        return AggregatedSalaries(dataset=dataset, labels=labels)
+        all_dates = [
+            dt_from + timedelta(days=x) for x in range((dt_upto - dt_from).days + 1)
+        ]
+
+        for date in all_dates:
+            if date not in labels:
+                labels.append(date)
+                dataset.append(0)
+
+        pairs = list(zip(labels, dataset))
+
+        pairs.sort(key=lambda pair: pair[0])
+
+        labels, dataset = zip(*pairs)
+
+        return AggregatedSalaries(
+            dataset=dataset, labels=[d.isoformat() for d in labels]
+        )
