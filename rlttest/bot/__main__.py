@@ -7,6 +7,8 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from rlttest.bot import handlers
+from rlttest.core.usecases.get_salaries import AggregateSalaries
+from rlttest.infrastructure.database.gateway.salary import SalaryGateway
 
 
 async def main() -> None:
@@ -20,12 +22,17 @@ async def main() -> None:
     dispatcher = Dispatcher()
 
     mongo_client = AsyncIOMotorClient(os.getenv("MONGO_URI"))
+    database = mongo_client.get_database(os.getenv("DB_NAME"))
 
     handlers.setup(dispatcher)
 
     try:
-        await mongo_client.admin.command("ping")
-        await dispatcher.start_polling(bot)
+        await dispatcher.start_polling(
+            bot,
+            aggragate_salaries=AggregateSalaries(
+                salary_gateway=SalaryGateway(database)
+            ),
+        )
     finally:
         await storage.close()
         await bot.session.close()
