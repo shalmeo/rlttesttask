@@ -18,7 +18,6 @@ async def main() -> None:
     )
 
     bot = Bot(os.getenv("BOT_TOKEN"))
-    storage = MemoryStorage()
     dispatcher = Dispatcher()
 
     mongo_client = AsyncIOMotorClient(os.getenv("MONGO_URI"))
@@ -34,7 +33,6 @@ async def main() -> None:
             ),
         )
     finally:
-        await storage.close()
         await bot.session.close()
         mongo_client.close()
 

@@ -14,4 +14,4 @@ class AggregationPeriod:
 @dataclass(frozen=True)
 class AggregatedSalaries:
     dataset: list[int]
-    labels: list[str]
+    labels: list[datetime]

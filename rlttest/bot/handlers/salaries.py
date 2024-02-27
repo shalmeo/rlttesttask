@@ -28,7 +28,10 @@ async def input_aggregation_period(
     )
 
     result = json.dumps(
-        {"dataset": aggragated_salaries.dataset, "labels": aggragated_salaries.labels}
+        {
+            "dataset": aggragated_salaries.dataset,
+            "labels": [d.isoformat() for d in aggragated_salaries.labels],
+        }
     )
 
     await message.answer(result)
